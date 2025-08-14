@@ -16,6 +16,31 @@ const DEFAULT_OPERATORS = [
 ];
 
 export default class CreateListView extends NavigationMixin(LightningElement) {
+    pendingContext = null;
+
+    normalizeIncomingFilter(f) {
+        const op = f?.operator || 'Equals';
+        const first = Array.isArray(f?.operandLabels) ? (f.operandLabels[0] ?? '') : '';
+        const trimmed = String(first).trim();
+
+        // Preserve blank for Equals/NotEqual, else require non-empty
+        const allowsBlank = op === 'Equals' || op === 'NotEqual';
+        if (!allowsBlank && trimmed.length === 0) return null;
+
+        return {
+            fieldApiName: f.fieldApiName,
+            operator: op,
+            value: allowsBlank && trimmed.length === 0 ? '' : trimmed
+        };
+    }
+
+    @api
+    preloadContext(context) {
+        // Stash and try to apply when ready
+        this.pendingContext = context ? { ...context } : null;
+        this.applyPendingContextIfReady();
+    }
+
     // ---- inbound ----
     @api apiName;
 
@@ -170,6 +195,7 @@ export default class CreateListView extends NavigationMixin(LightningElement) {
     // =========================
     handleSchemaLoaded() {
         this.isLoading = false;
+        this.applyPendingContextIfReady();
     }
 
     handleInputChange(event) {
@@ -192,6 +218,7 @@ export default class CreateListView extends NavigationMixin(LightningElement) {
         this.customLogic = '';
 
         this.dispatchValueChange();
+        this.applyPendingContextIfReady(); 
     }
 
     // Child: fields selected
@@ -209,6 +236,7 @@ export default class CreateListView extends NavigationMixin(LightningElement) {
         );
 
         this.dispatchValueChange();
+        this.applyPendingContextIfReady();  
     }
 
     // Sort handlers
@@ -266,5 +294,93 @@ export default class CreateListView extends NavigationMixin(LightningElement) {
 
     get hasAnyFilters() {
         return Array.isArray(this.filters) && this.filters.length > 0;
+    }
+
+    applyPendingContextIfReady() {
+        if (!this.pendingContext) return;
+        if (this.isLoading) return;                 // wait for schema
+        if (!this.selectedObject?.value) return;    // need object
+        // We can apply filters/sort/columns even if selectedFields is still empty;
+        // but for best UX we prefer to have them (so filter pickers have options).
+        // We'll auto-select needed fields via the child API below.
+
+        const ctx = this.pendingContext;
+
+        // If a different object was suggested, you can optionally ignore or gate it.
+        // Minimal change: only apply if it matches the current object (or no object provided).
+        if (ctx.objectApiName && ctx.objectApiName !== this.selectedObject.value) {
+            // Option A (minimal): skip applying until user switches object
+            return;
+            // Option B (proactive): switch object via child if you expose an @api for that
+        }
+
+        // --- Columns: pre-select any suggested columns in the child picker so they appear everywhere
+        const desiredColumns = Array.isArray(ctx.fieldApiNames) ? ctx.fieldApiNames : [];
+        const neededFields = new Set(desiredColumns);
+
+        // --- Filters: map incoming to our row model; also collect referenced fields
+        const incomingFilters = Array.isArray(ctx.filteredByInfo) ? ctx.filteredByInfo : [];
+        const mapped = incomingFilters
+            .map(f => this.normalizeIncomingFilter(f))
+            .filter(Boolean);
+
+        mapped.forEach(f => neededFields.add(f.fieldApiName));
+
+        // Ask child to select needed fields (uses your earlier @api updateField)
+        const picker = this.template.querySelector('c-sobject-picklist');
+        if (picker) {
+            neededFields.forEach(apiName => {
+                try { picker.updateField(apiName, true); } catch (_) { }
+            });
+        }
+
+        // Merge columns into our currently selectedFields (in case child event hasn’t fired yet)
+        // This keeps Sort/Filter comboboxes populated immediately.
+        const have = new Set(this.selectedFields.map(f => f.value));
+        const mergedSelected = [...this.selectedFields];
+        neededFields.forEach(api => {
+            if (!have.has(api)) mergedSelected.push({ label: api, value: api });
+        });
+        this.selectedFields = mergedSelected;
+
+        // Apply filters to UI rows
+        if (mapped.length) {
+            // Build N rows in our model
+            this.filters = mapped.map((f, idx) => ({
+                id: this.nextFilterId + idx,
+                fieldApiName: f.fieldApiName,
+                operator: f.operator,
+                value: f.value
+            }));
+            this.nextFilterId += mapped.length;
+        }
+
+        // Apply logic mode/string
+        if (ctx.filterLogicString && mapped.length > 1) {
+            this.logicMode = 'CUSTOM';
+            this.customLogic = ctx.filterLogicString;
+        } else if (mapped.length > 1) {
+            this.logicMode = 'AND'; // sensible default; UI can change it
+            this.customLogic = '';
+        }
+
+        // Apply sort
+        if (ctx.orderBy?.fieldApiName) {
+            this.sortField = ctx.orderBy.fieldApiName;
+            this.sortDirection = ctx.orderBy.isAscending ? 'ASC' : 'DESC';
+            // ensure sort field is among selected so the picker shows it
+            if (!neededFields.has(this.sortField)) {
+                if (picker) { try { picker.updateField(this.sortField, true); } catch (_) { } }
+                if (!have.has(this.sortField)) {
+                    this.selectedFields = [...this.selectedFields, { label: this.sortField, value: this.sortField }];
+                }
+            }
+        }
+
+        // We’re done with the pending context
+        this.pendingContext = null;
+
+        // Emit updated value (so your response LWC sees the pre-populated state)
+        this.dispatchValueChange();
     }
 }

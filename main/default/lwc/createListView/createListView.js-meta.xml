@@ -7,4 +7,10 @@
     <targets>
         <target>lightning__AgentforceInput</target>
     </targets>   
+    <targetConfigs>
+        <supportedFormFactors>
+            <supportedFormFactor type="Large" />
+            <supportedFormFactor type="Small" />
+        </supportedFormFactors>
+    </targetConfigs>
 </LightningComponentBundle>
