@@ -18,6 +18,7 @@ public without sharing class ListProcessor {
         // NEW: pass-through (optional)
         lvd.filteredByInfo = details.filteredByInfo;
         lvd.orderBy = details.orderBy;
+        lvd.filterLogicString = details.filterLogicString;
 
         res.details = lvd;
         return new List<Response>{ res };
@@ -32,6 +33,7 @@ public without sharing class ListProcessor {
         @InvocableVariable(required=true) public String apiName;
         @InvocableVariable(required=true) public String objectApiName;
         @InvocableVariable(required=true) public List<String> fieldApiNames;
+        @InvocableVariable public String filterLogicString;
 
         // NEW (optional): filters + sort by
         @InvocableVariable public List<FilterInfo> filteredByInfo;
@@ -47,6 +49,7 @@ public without sharing class ListProcessor {
         @InvocableVariable(required=true) public String apiName;
         @InvocableVariable(required=true) public String objectApiName;
         @InvocableVariable(required=true) public List<String> fieldApiNames;
+        @InvocableVariable public String filterLogicString;
 
         // NEW (optional): echo back for downstream use
         @InvocableVariable public List<FilterInfo> filteredByInfo;

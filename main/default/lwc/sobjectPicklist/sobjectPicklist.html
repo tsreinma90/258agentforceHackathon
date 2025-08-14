@@ -11,19 +11,15 @@
     </template>
 
     <template if:true={fieldsProcessed}>
-        <div class="slds-grid">
-            <div class="slds-col slds-size_1-of-1 slds-p-horizontal_x-small">
-                <lightning-input type="search" label="" placeholder="Type to filter field list..." value={searchFilter}
-                    onchange={searchFields}></lightning-input>
-            </div>
-        </div>
+        <lightning-input type="search" label="" placeholder="Type to filter field list..." value={searchFilter}
+            onchange={searchFields}></lightning-input>
         <br />
         <div style="overflow-y: scroll; white-space: nowrap;" class="slds-align_absolute-center">
             <div>
-                    <lightning-dual-listbox name="fields" label="Select Fields" source-label="Available"
-                        selected-label="Selected" field-level-help="Choose which fields to include"
-                        options={fieldOptions} value={selectedFieldValues} size="12" onchange={handleFieldsChange}>
-                    </lightning-dual-listbox>
+                <lightning-dual-listbox name="fields" label="Select Fields" source-label="Available"
+                    selected-label="Selected" field-level-help="Choose which fields to include" options={fieldOptions}
+                    value={selectedFieldValues} size="12" onchange={handleFieldsChange}>
+                </lightning-dual-listbox>
             </div>
         </div>
 

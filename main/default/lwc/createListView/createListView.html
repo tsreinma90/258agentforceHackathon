@@ -2,7 +2,9 @@
   <lightning-card title="">
     <div class="slds-p-around_medium slds-is-relative" aria-busy={isLoading}>
       <template if:true={isLoading}>
-        <lightning-spinner alternative-text="Loading form..." size="medium"></lightning-spinner>
+        <lightning-spinner alternative-text="Loading form..." size="medium"
+          class="slds-is-absolute slds-align_absolute-center">
+        </lightning-spinner>
       </template>
 
       <lightning-input label="List View Name" value={listViewLabel} name="label" onchange={handleInputChange}>
@@ -11,21 +13,70 @@
       <c-sobject-picklist onobjectselected={setObject} onfieldsupdated={setFields} onschemaloaded={handleSchemaLoaded}>
       </c-sobject-picklist>
 
+      <!-- Sort Section -->
       <template if:true={hasSortOptions}>
-        <div class="slds-m-top_large">
-          <div class="slds-text-title">Sort</div>
-          <div class="slds-grid slds-gutters slds-wrap slds-m-top_small">
-            <div class="slds-col slds-size_8-of-12">
-              <lightning-combobox label="Sort By" placeholder="Select field" options={sortFieldOptions}
-                value={sortField} onchange={handleSortFieldChange}>
-              </lightning-combobox>
+        <lightning-combobox name="sortField" label="Sort Field" value={sortField} options={sortFieldOptions}
+          onchange={handleSortFieldChange}></lightning-combobox>
+
+        <lightning-combobox name="sortDirection" label="Sort Direction" value={sortDirection}
+          options={sortDirectionOptions} onchange={handleSortDirChange}></lightning-combobox>
+      </template>
+
+      <!-- Filters Section -->
+      <template if:true={hasFilterOptions}>
+        <div class="slds-m-top_medium">
+          <h3 class="slds-text-heading_small">Filters</h3>
+
+          <!-- Each Filter Row -->
+          <template for:each={filtersWithIndex} for:item="f">
+            <div key={f.id} class="slds-grid slds-gutters slds-m-bottom_x-small">
+              <!-- Field -->
+              <div class="slds-col">
+                <lightning-combobox name="filterField" label="Field" value={f.fieldApiName} options={filterFieldOptions}
+                  data-id={f.id} onchange={handleFilterFieldChange}>
+                </lightning-combobox>
+              </div>
+
+              <!-- Operator -->
+              <div class="slds-col">
+                <lightning-combobox name="filterOperator" label="Operator" value={f.operator} options={operatorOptions}
+                  data-id={f.id} onchange={handleFilterOperatorChange}>
+                </lightning-combobox>
+              </div>
+
+              <!-- Value -->
+              <div class="slds-col">
+                <lightning-input type="text" label="Value" value={f.value} data-id={f.id}
+                  onchange={handleFilterValueChange}>
+                </lightning-input>
+              </div>
+
+              <!-- Remove Button -->
+              <div class="slds-col delete-col slds-align_absolute-center">
+                <lightning-button-icon icon-name="utility:delete" alternative-text="Remove Filter" data-id={f.id}
+                  onclick={removeFilterRow} variant="bare">
+                </lightning-button-icon>
+              </div>
             </div>
-            <div class="slds-col slds-size_4-of-12">
-              <lightning-combobox label="Direction" options={sortDirectionOptions} value={sortDirection}
-                onchange={handleSortDirChange}>
-              </lightning-combobox>
+          </template>
+
+          <!-- Add Filter Button -->
+          <lightning-button class="slds-m-top_x-small" label="Add Filter" icon-name="utility:add"
+            onclick={addFilterRow}></lightning-button>
+
+          <!-- Logic Mode -->
+          <template if:true={hasAnyFilters}>
+            <div class="slds-m-top_medium">
+              <lightning-combobox label="Filter Logic" value={logicMode} options={logicModeOptions}
+                onchange={handleLogicModeChange}></lightning-combobox>
             </div>
-          </div>
+
+            <!-- Custom Logic Input -->
+            <template if:true={showCustomLogic}>
+              <lightning-input type="text" label="Custom Logic (e.g. 1 OR (2 AND 3))" value={customLogic}
+                onchange={handleCustomLogicChange}></lightning-input>
+            </template>
+          </template>
         </div>
       </template>
     </div>

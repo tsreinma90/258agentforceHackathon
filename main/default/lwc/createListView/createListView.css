@@ -4,3 +4,8 @@
     width: 80px;
     height: 80px;
 }
+
+.delete-col {
+    flex: 0 0 auto;
+    width: 2rem;
+}

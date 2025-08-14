@@ -6,7 +6,7 @@ import { createListInfo } from 'lightning/uiListsApi';
 export default class ListViewResponse extends NavigationMixin(LightningElement) {
   _value;
 
-  // --- tiny helper to accept {details:{...}} or flat { ... }
+  // Accept either flat { ... } or { details: { ... } }
   normalize(v) {
     return v && v.details ? v.details : v || {};
   }
@@ -17,10 +17,7 @@ export default class ListViewResponse extends NavigationMixin(LightningElement) 
   }
   set value(v) {
     this._value = v;
-    // initialize if the component is already in the DOM and value just arrived
-    if (this.isConnected) {
-      this.initializeFromValue();
-    }
+    if (this.isConnected) this.initializeFromValue();
   }
 
   // inbound props (derived)
@@ -28,6 +25,9 @@ export default class ListViewResponse extends NavigationMixin(LightningElement) 
   apiName;
   objectName;
   fieldApiNames = [];
+  filteredByInfo = null;
+  filterLogicString = null;   // <-- important
+  orderBy = null;
 
   // state
   jobComplete = false;
@@ -39,21 +39,27 @@ export default class ListViewResponse extends NavigationMixin(LightningElement) 
     this.initializeFromValue();
   }
 
+  normalizeOperand(val) {
+    const s = String(val ?? '').trim();
+    if (s === '') return s; // allow blank (for Equals/NotEqual blank checks)
+    const low = s.toLowerCase();
+    if (low === 'true' || low === '1' || low === 'yes' || low === 'y') return '1';
+    if (low === 'false' || low === '0' || low === 'no' || low === 'n') return '0';
+    return s; // leave other values as-is
+  }
+
   initializeFromValue() {
-    const raw = this.normalize(this._value);
-    if (!raw || !raw.objectApiName) {
-      // Wait until parent passes a usable payload
-      return;
-    }
-    // (keep your JSON clone if you prefer, but it’s not required)
-    const value = raw;
+    const value = this.normalize(this._value);
+    if (!value || !value.objectApiName) return;
 
     this.label = value.label;
     this.apiName = (value.apiName || value.label || '').replace(/\s+/g, '_');
     this.objectName = value.objectApiName;
     this.fieldApiNames = value.fieldApiNames || [];
+    this.filteredByInfo = value.filteredByInfo || null;
+    this.filterLogicString = value.filterLogicString || null;  // <-- read it
+    this.orderBy = value.orderBy || null;
 
-    // kick off creation
     this.handleCreateListView();
   }
 
@@ -61,41 +67,81 @@ export default class ListViewResponse extends NavigationMixin(LightningElement) 
     this.isWorking = true;
 
     try {
-      // Example: build filters dynamically; swap in your actual emails
-      const emails = ['tom.reinman@gmail.com'];
+      // Put sort field first (UI API has no explicit sort param)
+      let displayColumns = [...(this.fieldApiNames || [])];
+      if (this.orderBy?.fieldApiName) {
+        const sortField = this.orderBy.fieldApiName;
+        displayColumns = [sortField, ...displayColumns.filter(c => c !== sortField)];
+      }
 
-      const filters = emails.map(email => ({
-        fieldApiName: 'Email',
-        operator: 'Equals',
-        operandLabels: [email]
-      }));
-      const logic = `(${filters.map((_, i) => i + 1).join(' OR ')})`;
+      const hasFilters = Array.isArray(this.filteredByInfo) && this.filteredByInfo.length > 0;
+
+      // Normalize operands (e.g., boolean true/false -> "1"/"0")
+      let normalizedFilters = undefined;
+      if (hasFilters) {
+        normalizedFilters = this.filteredByInfo.map(f => ({
+          ...f,
+          operandLabels: (Array.isArray(f.operandLabels) ? f.operandLabels : [])
+            .map(v => this.normalizeOperand(v))
+        }));
+      }
+
+      // logic string (existing)
+      let logic =
+        (typeof this.filterLogicString === 'string' && this.filterLogicString.trim())
+          ? this.filterLogicString.trim()
+          : undefined;
+      if (!logic && hasFilters && this.filteredByInfo.length > 1) {
+        logic = `(${Array.from({ length: this.filteredByInfo.length }, (_, i) => i + 1).join(' AND ')})`;
+      }
 
       const payload = {
         objectApiName: this.objectName,
         listViewApiName: this.apiName,
         label: this.label,
-        displayColumns: this.fieldApiNames,
-        filteredByInfo: filters,
-        filterLogicString: logic,
-        visibility: 'Private'
+        visibility: 'Private',
+        displayColumns,
+        ...(hasFilters ? { filteredByInfo: normalizedFilters } : {}),
+        ...(logic ? { filterLogicString: logic } : {})
       };
+
+      // Debug payload
+      // eslint-disable-next-line no-console
+      console.log('*** createListInfo payload', JSON.stringify(payload));
 
       const result = await createListInfo(payload);
       this.listViewId = result?.id;
 
       const baseUrl = window.location.origin;
       this.generatedUrl = `${baseUrl}/lightning/o/${this.objectName}/list?filterName=${this.apiName}`;
-
       this.jobComplete = true;
     } catch (err) {
-      this.dispatchEvent(
-        new ShowToastEvent({
-          title: 'Failed to create list view',
-          message: (err && (err.body?.message || err.message)) || 'Unknown error',
-          variant: 'error'
-        })
-      );
+      // Pull the most helpful message from the UI API error shape
+      const body = err?.body || {};
+      const top = body.message;
+
+      const opErrors = Array.isArray(body?.output?.errors)
+        ? body.output.errors.map(e => e.message).filter(Boolean)
+        : [];
+
+      // field-level messages are nested by field; flatten them
+      const fieldErrObj = body?.output?.fieldErrors || {};
+      const fieldMsgs = Object.values(fieldErrObj)
+        .flat()
+        .map(e => e.message)
+        .filter(Boolean);
+
+      const allMsgs = [top, ...opErrors, ...fieldMsgs].filter(Boolean);
+      const message = allMsgs.length ? allMsgs.join(' • ') : (err?.message || 'Unknown error');
+
+      this.dispatchEvent(new ShowToastEvent({
+        title: 'Failed to create list view',
+        message,
+        variant: 'error'
+      }));
+
+      // eslint-disable-next-line no-console
+      console.error('*** createListInfo error', JSON.stringify(err, null, 2));
     } finally {
       this.isWorking = false;
     }
@@ -112,34 +158,25 @@ export default class ListViewResponse extends NavigationMixin(LightningElement) 
   handleOpen() {
     this[NavigationMixin.Navigate]({
       type: 'standard__objectPage',
-      attributes: {
-        objectApiName: this.objectName,
-        actionName: 'list'
-      },
-      state: {
-        filterName: this.apiName
-      }
+      attributes: { objectApiName: this.objectName, actionName: 'list' },
+      state: { filterName: this.apiName }
     });
   }
 
   async handleCopy() {
     try {
       await navigator.clipboard.writeText(this.generatedUrl);
-      this.dispatchEvent(
-        new ShowToastEvent({
-          title: 'Link copied',
-          message: 'List view link copied to clipboard.',
-          variant: 'success'
-        })
-      );
+      this.dispatchEvent(new ShowToastEvent({
+        title: 'Link copied',
+        message: 'List view link copied to clipboard.',
+        variant: 'success'
+      }));
     } catch {
-      this.dispatchEvent(
-        new ShowToastEvent({
-          title: 'Copy failed',
-          message: 'Could not copy link.',
-          variant: 'warning'
-        })
-      );
+      this.dispatchEvent(new ShowToastEvent({
+        title: 'Copy failed',
+        message: 'Could not copy link.',
+        variant: 'warning'
+      }));
     }
   }
 }
