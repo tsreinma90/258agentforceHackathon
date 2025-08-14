@@ -1,0 +1,5 @@
+{
+  "title" : "Create List View",
+  "description" : "Queries the record of the list view that the user created",
+  "lightning:type" : "@apexClassType/c__ListProcessor$Details"
+}

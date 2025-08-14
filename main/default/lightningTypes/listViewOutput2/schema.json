@@ -1,0 +1,5 @@
+{
+  "title" : "Review List View Details",
+  "description" : "Displays the list view that got created",
+  "lightning:type" : "@apexClassType/c__ListProcessor$ListViewDetails"
+}

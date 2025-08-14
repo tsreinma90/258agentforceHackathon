@@ -1,0 +1,55 @@
+<template>
+    <template if:true={fieldsProcessed}>
+        <template if:false={filterRunning}>
+            <label class="slds-form-element__label">Object</label>
+            <select class="slds-select" onchange={getFields} data-id="sObjectSelect">
+                <template for:each={filteredObjects} for:item="object">
+                    <option key={object} value={object.value}>{object.label} ({object.value})</option>
+                </template>
+            </select>
+        </template>
+    </template>
+
+    <template if:true={fieldsProcessed}>
+        <div class="slds-grid">
+            <div class="slds-col slds-size_1-of-1 slds-p-horizontal_x-small">
+                <lightning-input type="search" label="" placeholder="Type to filter field list..." value={searchFilter}
+                    onchange={searchFields}></lightning-input>
+            </div>
+        </div>
+        <br />
+        <div style="overflow-y: scroll; white-space: nowrap;" class="slds-align_absolute-center">
+            <div>
+                    <lightning-dual-listbox name="fields" label="Select Fields" source-label="Available"
+                        selected-label="Selected" field-level-help="Choose which fields to include"
+                        options={fieldOptions} value={selectedFieldValues} size="12" onchange={handleFieldsChange}>
+                    </lightning-dual-listbox>
+            </div>
+        </div>
+
+        <!--<div class="slds-grid slds-p-left_small slds-p-right_small" style="position: relative; top: 10px;">
+            <div style="overflow-y: scroll; white-space: nowrap;" class="slds-align_absolute-center">
+                <div style="display: inline-block; max-height: 500px; width: 100%;">
+                    <table class="slds-table slds-table_cell-buffer">
+                        <template if:true={fieldsUpdated}>
+                            <template if:true={fieldFilterRunning}>
+                                <div class="fieldSpinner">
+                                    <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                                </div>
+                            </template>
+                            <template for:each={filteredFields} for:item="field">
+                                <tr key={field} class="slds-hint-parent">
+                                    <td colspan="5">
+                                        <div class="mapped slds-grid_vertical-stretch" draggable="true" key={field} data-item={field.value} ondragstart={handleDragStart} style="cursor: pointer;" if:false={field.selected}>
+                                            {field.value} 
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </template>
+                    </table>
+                </div>
+            </div>
+        </div>-->
+    </template>
+</template>

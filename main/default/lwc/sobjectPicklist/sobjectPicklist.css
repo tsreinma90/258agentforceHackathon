@@ -1,0 +1,25 @@
+fieldSpinner {
+    position: relative;
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+    margin: auto;
+}
+
+.mapped{
+    background-color: white;
+    border-radius: 15px;
+    color: black;
+    padding: 4px 8px;
+    text-align: center;
+    /* rgb(40, 110, 172); */
+}
+
+.mapped:hover {
+    background-color: #99c4f5;
+  }
+
+:host {
+    --sds-c-checkbox-color-background-checked: rgb(0, 98, 128);
+    --sds-c-checkbox-mark-color-foreground: rgb(251, 251, 251);
+}
