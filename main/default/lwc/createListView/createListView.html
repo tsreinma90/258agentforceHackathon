@@ -1,17 +1,29 @@
 <template>
   <lightning-card title="">
     <div class="slds-p-around_medium">
-      <lightning-input
-        label="List View Name"
-        value={listViewLabel}
-        name="label"
-        onchange={handleInputChange}>
+      <lightning-input label="List View Name" value={listViewLabel} name="label" onchange={handleInputChange}>
       </lightning-input>
 
-      <c-sobject-picklist 
-        onobjectselected={setObject}
-        onfieldsupdated={setFields}>
+      <c-sobject-picklist onobjectselected={setObject} onfieldsupdated={setFields}>
       </c-sobject-picklist>
+
+      <template if:true={hasSortOptions}>
+        <div class="slds-m-top_large">
+          <div class="slds-text-title">Sort</div>
+          <div class="slds-grid slds-gutters slds-wrap slds-m-top_small">
+            <div class="slds-col slds-size_8-of-12">
+              <lightning-combobox label="Sort By" placeholder="Select field" options={sortFieldOptions}
+                value={sortField} onchange={handleSortFieldChange}>
+              </lightning-combobox>
+            </div>
+            <div class="slds-col slds-size_4-of-12">
+              <lightning-combobox label="Direction" options={sortDirectionOptions} value={sortDirection}
+                onchange={handleSortDirChange}>
+              </lightning-combobox>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   </lightning-card>
 </template>
