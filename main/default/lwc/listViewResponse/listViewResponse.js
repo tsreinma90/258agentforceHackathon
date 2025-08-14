@@ -179,4 +179,46 @@ export default class ListViewResponse extends NavigationMixin(LightningElement) 
       }));
     }
   }
+
+  get hasFilters() {
+    return Array.isArray(this.filteredByInfo) && this.filteredByInfo.length > 0;
+  }
+
+  // Pretty filter rows for display (handles blank + boolean labels)
+  get filterDisplay() {
+    if (!this.hasFilters) return [];
+    return this.filteredByInfo.map((f, i) => {
+      const raw = Array.isArray(f.operandLabels) && f.operandLabels.length
+        ? String(f.operandLabels[0] ?? '')
+        : '';
+      // human-friendly value for blank / boolean
+      const low = raw.toLowerCase();
+      const valueLabel =
+        raw === '' ? '(blank)' :
+          low === '1' || low === 'true' ? 'True' :
+            low === '0' || low === 'false' ? 'False' : raw;
+
+      return {
+        key: `${i}-${f.fieldApiName}-${f.operator}`,
+        fieldApiName: f.fieldApiName,
+        operator: f.operator,
+        valueLabel
+      };
+    });
+  }
+
+  get hasLogic() {
+    return typeof this.filterLogicString === 'string' && this.filterLogicString.trim().length > 0;
+  }
+
+  // Sort display
+  get hasOrderBy() {
+    return !!(this.orderBy && this.orderBy.fieldApiName);
+  }
+  get orderByField() {
+    return this.orderBy?.fieldApiName || '';
+  }
+  get orderDirectionLabel() {
+    return this.orderBy?.isAscending ? 'Ascending' : 'Descending';
+  }
 }

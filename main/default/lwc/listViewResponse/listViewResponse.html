@@ -1,43 +1,72 @@
 <template>
-    <lightning-card title={cardTitle} icon-name="standard:dashboard">
-        <div class="slds-p-around_medium">
+  <template if:true={jobComplete}>
+    <lightning-card title={cardTitle} icon-name="utility:table">
+      <div class="slds-p-around_medium slds-text-body_regular">
 
-            <template if:true={isWorking}>
-                <div class="slds-is-relative slds-m-vertical_medium">
-                    <lightning-spinner alternative-text="Creating list view"></lightning-spinner>
-                </div>
-            </template>
-
-            <template if:true={jobComplete}>
-                <div class="slds-text-title slds-m-bottom_xx-small">
-                    Object
-                </div>
-                <div class="slds-m-bottom_medium">{objectName}</div>
-
-                <template if:true={hasFields}>
-                    <div class="slds-text-title slds-m-bottom_xx-small">
-                        Displayed Fields
-                    </div>
-                    <div class="slds-m-bottom_medium slds-wrap pill-row">
-                        <template for:each={fieldApiNames} for:item="f">
-                            <lightning-pill key={f} label={f}></lightning-pill>
-                        </template>
-                    </div>
-                </template>
-
-                <div class="slds-text-title slds-m-bottom_xx-small">
-                    Link
-                </div>
-                <div class="slds-m-bottom_medium">
-                    <lightning-formatted-url value={generatedUrl} label={generatedUrl}></lightning-formatted-url>
-                </div>
-
-                <lightning-button-group>
-                    <lightning-button variant="brand" label="Open List" onclick={handleOpen}></lightning-button>
-                    <lightning-button label="Copy Link" onclick={handleCopy}></lightning-button>
-                </lightning-button-group>
-            </template>
-
+        <!-- Object -->
+        <div class="slds-m-bottom_small">
+          <div class="slds-text-title_caps slds-m-bottom_xx-small">Object</div>
+          <div>{objectName}</div>
         </div>
+
+        <!-- Displayed Fields -->
+        <template if:true={hasFields}>
+          <div class="slds-m-bottom_small">
+            <div class="slds-text-title_caps slds-m-bottom_xx-small">Displayed Fields</div>
+            <div class="slds-wrap slds-grid slds-grid_vertical-align-center slds-grid_pull-padded">
+              <template for:each={fieldApiNames} for:item="f">
+                <span key={f} class="slds-p-horizontal_xx-small slds-m-right_xx-small slds-m-bottom_xx-small">
+                  <lightning-badge label={f}></lightning-badge>
+                </span>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Filters -->
+        <template if:true={hasFilters}>
+          <div class="slds-m-bottom_small">
+            <div class="slds-text-title_caps slds-m-bottom_xx-small">Filters</div>
+
+            <ol class="slds-list_dotted slds-m-left_small">
+              <template for:each={filterDisplay} for:item="flt">
+                <li key={flt.key} class="slds-m-bottom_xx-small">
+                  <lightning-badge class="slds-m-right_xx-small" label={flt.fieldApiName}></lightning-badge>
+                  <span class="slds-m-right_xx-small">{flt.operator}</span>
+                  <lightning-badge variant="inverse" label={flt.valueLabel}></lightning-badge>
+                </li>
+              </template>
+            </ol>
+
+            <template if:true={hasLogic}>
+              <div class="slds-text-body_small slds-m-top_xx-small">
+                Logic: <code>{filterLogicString}</code>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Sort -->
+        <template if:true={hasOrderBy}>
+          <div class="slds-m-bottom_small">
+            <div class="slds-text-title_caps slds-m-bottom_xx-small">Sort</div>
+            <lightning-badge class="slds-m-right_xx-small" label={orderByField}></lightning-badge>
+            <span>{orderDirectionLabel}</span>
+          </div>
+        </template>
+
+        <!-- Link + actions -->
+        <div class="slds-m-top_small">
+          <div class="slds-text-title_caps slds-m-bottom_xx-small">Link</div>
+          <a href={generatedUrl} target="_blank" rel="noopener noreferrer">{generatedUrl}</a>
+
+          <div class="slds-m-top_small slds-button-group" role="group">
+            <lightning-button label="Open List" variant="brand" onclick={handleOpen}></lightning-button>
+            <lightning-button label="Copy Link" onclick={handleCopy}></lightning-button>
+          </div>
+        </div>
+
+      </div>
     </lightning-card>
+  </template>
 </template>
