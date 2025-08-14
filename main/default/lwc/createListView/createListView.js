@@ -2,99 +2,67 @@ import { LightningElement, api } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 
 export default class CreateListView extends NavigationMixin(LightningElement) {
-    listViewLabel = '';
-
-    // Stores and controls which sobject / fields are selected
-    selectedObject;
-    selectedFields = [];
-    selectedFieldsLoaded = true;
-
+    // inbound
     @api apiName;
 
-    handleInputChange(event) {
-        this.listViewLabel = event.target.value;
-        const apiName = this.listViewLabel.replace(/\s+/g, '_');
+    // ui state
+    listViewLabel = '';
+    selectedObject;          // expect { value: 'Contact', label: 'Contact', ... } from child
+    selectedFields = [];     // expect array of field objects [{label, value, ...}]
+    selectedFieldsLoaded = true;
+
+    // ---- helpers ----
+    get computedApiName() {
+        // precedence: explicit @api apiName, else label-based slug, else empty
+        return (this.apiName && this.apiName.trim())
+            ? this.apiName
+            : (this.listViewLabel || '').replace(/\s+/g, '_');
+    }
+
+    get objectApiName() {
+        // child sends object API name in event.detail (e.g., 'Contact')
+        return this.selectedObject?.value || 'Contact';
+    }
+
+    get fieldApiNames() {
+        // normalize to string[] of API names
+        return (this.selectedFields || []).map(f => f.value);
+    }
+
+    dispatchValueChange() {
         this.dispatchEvent(
-            new CustomEvent("valuechange", {
+            new CustomEvent('valuechange', {
                 detail: {
                     value: {
-                        apiName,
-                        label : this.listViewLabel,
-                        objectApiName : 'Contact',
-                        fieldApiNames : ['Name', 'Email', 'Phone']
-                    },
+                        apiName: this.computedApiName,
+                        label: this.listViewLabel,
+                        objectApiName: this.objectApiName,
+                        fieldApiNames: this.fieldApiNames
+                    }
                 },
-            }),
+                bubbles: true,
+                composed: true
+            })
         );
+    }
+
+    // ---- handlers ----
+    handleInputChange(event) {
+        this.listViewLabel = event.target.value;
+        this.dispatchValueChange();
     }
 
     // Called when child component sObject is selected
     setObject(event) {
-        const sObject = event.detail;
-        this.selectedObject = sObject;
-        this.selectedFields = [];
+        this.selectedObject = event.detail;   // { value: 'Contact', ... }
+        this.selectedFields = [];             // reset fields when object changes (optional)
+        this.dispatchValueChange();
     }
 
     // Called when child component fields are selected / deselected 
     setFields(event) {
-        const fields = event.detail;
-        this.selectedFields = [];
-        fields.forEach(f => {
-            this.selectedFields.push(f);
-        });
+        const fields = event.detail;          // array of field objects
+        this.selectedFields = Array.isArray(fields) ? fields.slice() : [];
+        this.dispatchValueChange();
     }
-
-    /*handleCreateListView() {
-        this.showSpinner = true;
-        const emails = ['tom.reinman@gmail.com'];
-        /*this.rawInput
-            .split(',')
-            .map(s => s.trim())
-            .filter(Boolean);
-
-        // Build the filters
-        const filters = emails.map(email => ({
-            fieldApiName: 'Email',
-            operator: 'Equals',
-            operandLabels: [email]
-        }));
-        // Build the logic string: "(1 OR 2 OR 3...)"
-        const logic = `(${filters.map((_, i) => i + 1).join(' OR ')})`;
-
-        // Derive a safe API name from the label
-        const apiName = this.listViewLabel.replace(/\s+/g, '_');
-
-        const payload = {
-            objectApiName: 'Contact',
-            listViewApiName: apiName,
-            label: this.listViewLabel,
-            displayColumns: ['FirstName', 'LastName', 'Email'],
-            filteredByInfo: filters,
-            filterLogicString: logic,
-            visibility: 'Private'
-        };
-
-        console.log('***', JSON.stringify(payload, undefined, 2));
-
-        createListInfo(payload)
-            .then(result => {
-                this.disableAllInputs = true;
-                this.dispatchEvent(
-                    new CustomEvent("valuechange", {
-                        detail: {
-                            value: {
-                                apiName
-                            },
-                        },
-                    }),
-                );
-
-                this.showSpinner = false;
-                this.jobComplete = true;
-
-            })
-            .catch(err => {
-                console.log('*** Failed to create list view. Check console for details.');
-            });
-    }*/
 }

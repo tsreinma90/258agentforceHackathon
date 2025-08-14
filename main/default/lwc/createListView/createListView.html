@@ -1,33 +1,17 @@
 <template>
   <lightning-card title="">
     <div class="slds-p-around_medium">
-      <lightning-input label="List View Name" value={listViewLabel} name="label"
-        onchange={handleInputChange}></lightning-input>
+      <lightning-input
+        label="List View Name"
+        value={listViewLabel}
+        name="label"
+        onchange={handleInputChange}>
+      </lightning-input>
 
-        <c-sobject-picklist 
-            is-disabled=false 
-            onobjectselected={setObject}
-            onfieldsupdated={setFields}>
-        </c-sobject-picklist>
-
-      <!--<lightning-textarea
-          label="Contact Emails (comma-separated)"
-          placeholder="e.g. joe@example.com, jane@acme.com"
-          value={rawInput}
-          onchange={handleInputChange}
-        ></lightning-textarea>-->
-
-      <!--<lightning-button
-          class="slds-m-top_medium"
-          label="Save Settings"
-          onclick={handleCreateListView}
-          variant="brand"
-          disabled={jobComplete}
-        ></lightning-button>-->
-
-      <!--<template if={error}>
-          <p class="slds-text-color_error slds-m-top_small">{error}</p>
-        </template>-->
+      <c-sobject-picklist 
+        onobjectselected={setObject}
+        onfieldsupdated={setFields}>
+      </c-sobject-picklist>
     </div>
   </lightning-card>
 </template>

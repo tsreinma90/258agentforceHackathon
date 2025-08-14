@@ -1,7 +1,43 @@
 <template>
-    <template if:true={jobComplete}>
-        <lightning-card title="List View">
-            <a>{generatedUrl}</a>
-        </lightning-card>
-    </template>
+    <lightning-card title={cardTitle} icon-name="standard:dashboard">
+        <div class="slds-p-around_medium">
+
+            <template if:true={isWorking}>
+                <div class="slds-is-relative slds-m-vertical_medium">
+                    <lightning-spinner alternative-text="Creating list view"></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:true={jobComplete}>
+                <div class="slds-text-title slds-m-bottom_xx-small">
+                    Object
+                </div>
+                <div class="slds-m-bottom_medium">{objectName}</div>
+
+                <template if:true={hasFields}>
+                    <div class="slds-text-title slds-m-bottom_xx-small">
+                        Displayed Fields
+                    </div>
+                    <div class="slds-m-bottom_medium slds-wrap pill-row">
+                        <template for:each={fieldApiNames} for:item="f">
+                            <lightning-pill key={f} label={f}></lightning-pill>
+                        </template>
+                    </div>
+                </template>
+
+                <div class="slds-text-title slds-m-bottom_xx-small">
+                    Link
+                </div>
+                <div class="slds-m-bottom_medium">
+                    <lightning-formatted-url value={generatedUrl} label={generatedUrl}></lightning-formatted-url>
+                </div>
+
+                <lightning-button-group>
+                    <lightning-button variant="brand" label="Open List" onclick={handleOpen}></lightning-button>
+                    <lightning-button label="Copy Link" onclick={handleCopy}></lightning-button>
+                </lightning-button-group>
+            </template>
+
+        </div>
+    </lightning-card>
 </template>
