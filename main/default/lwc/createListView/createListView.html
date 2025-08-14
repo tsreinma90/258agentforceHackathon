@@ -1,10 +1,14 @@
 <template>
   <lightning-card title="">
-    <div class="slds-p-around_medium">
+    <div class="slds-p-around_medium slds-is-relative" aria-busy={isLoading}>
+      <template if:true={isLoading}>
+        <lightning-spinner alternative-text="Loading form..." size="medium"></lightning-spinner>
+      </template>
+
       <lightning-input label="List View Name" value={listViewLabel} name="label" onchange={handleInputChange}>
       </lightning-input>
 
-      <c-sobject-picklist onobjectselected={setObject} onfieldsupdated={setFields}>
+      <c-sobject-picklist onobjectselected={setObject} onfieldsupdated={setFields} onschemaloaded={handleSchemaLoaded}>
       </c-sobject-picklist>
 
       <template if:true={hasSortOptions}>

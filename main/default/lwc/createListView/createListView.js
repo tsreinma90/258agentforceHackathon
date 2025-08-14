@@ -1,8 +1,10 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 
 export default class CreateListView extends NavigationMixin(LightningElement) {
-    @api apiName;
+    apiName;
+
+    isLoading = true;
 
     // existing state
     listViewLabel = '';
@@ -17,6 +19,10 @@ export default class CreateListView extends NavigationMixin(LightningElement) {
     filteredByInfo = null;
     orderBy = null;
 
+    handleSchemaLoaded() {
+    this.isLoading = false;
+  }
+  
     // ---- helpers ----
     get computedApiName() {
         return (this.apiName && this.apiName.trim())
